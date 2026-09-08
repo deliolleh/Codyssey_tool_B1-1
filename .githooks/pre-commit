@@ -1,0 +1,50 @@
+#!/bin/sh
+# pre-commit: 스테이징된 변경에서 시크릿을 스캔하고, 발견 시 커밋을 차단한다.
+# 1순위: gitleaks / 폴백: 수제 패턴 스캔
+# 다른 컴퓨터에서 클론한 경우: git config core.hooksPath .githooks 로 활성화
+# 우회가 필요한 경우(오탐 확인 후): git commit --no-verify
+
+# 전역 훅(~/.githooks)이 이미 스캔을 마치고 체이닝해온 경우 중복 스캔 생략
+[ -n "$GLOBAL_PRECOMMIT_DONE" ] && exit 0
+
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks git --pre-commit --staged --redact --no-banner --verbose; then
+    echo ""
+    echo "[pre-commit] gitleaks가 시크릿을 발견해 커밋을 차단했습니다."
+    echo "  오탐이라면 해당 줄에 '// gitleaks:allow' 주석을 달거나 .gitleaksignore를 사용하세요."
+    exit 1
+  fi
+  exit 0
+fi
+
+# 폴백: gitleaks 미설치 환경용 수제 패턴 스캔
+files=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$files" ] && exit 0
+
+pattern='ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|xox[bap]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|-----BEGIN [A-Z ]*PRIVATE KEY-----|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|[a-z]+://[^/[:space:]:]+:[^@[:space:]]{4,}@'
+found=0
+
+for f in $files; do
+  case "$f" in
+    .env|.env.*|*.pem|*.key)
+      echo "[pre-commit] 시크릿 파일이 스테이징되어 있습니다: $f"
+      found=1
+      continue
+      ;;
+  esac
+
+  matches=$(git show ":$f" 2>/dev/null | grep -nE "$pattern" | head -5)
+  if [ -n "$matches" ]; then
+    echo "[pre-commit] 시크릿 의심 패턴 발견: $f"
+    echo "$matches"
+    found=1
+  fi
+done
+
+if [ "$found" -eq 1 ]; then
+  echo ""
+  echo "[pre-commit] 커밋이 차단되었습니다. 위 항목을 제거한 뒤 다시 커밋하세요."
+  exit 1
+fi
+
+exit 0

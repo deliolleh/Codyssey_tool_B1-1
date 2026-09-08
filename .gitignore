@@ -1,0 +1,18 @@
+# 시크릿 / 자격증명
+.env
+.env.*
+*.key
+*.pem
+
+# OS / 에디터
+.DS_Store
+Thumbs.db
+
+# 임시 파일
+*.log
+*.tmp
+
+# 로컬 전용 문서 (과제 명세·학습 관리 — 공개 저장소 제외)
+docs/summary.md
+docs/harness.md
+docs/미션*.pdf
