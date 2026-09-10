@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="한재혁의 포트폴리오 웹사이트">
+  <title>한재혁 | 포트폴리오</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/main.js" defer></script>
+</head>
+<body>
+  <!-- 페이지 도입부: 로고 + 주 메뉴 + 컨트롤 -->
+  <header class="site-header">
+    <nav class="nav" aria-label="주 메뉴">
+      <a href="#hero" class="nav-logo">JH</a>
+
+      <ul class="nav-menu">
+        <li><a href="#hero" class="nav-link">홈</a></li>
+        <li><a href="#about" class="nav-link">소개</a></li>
+        <li><a href="#skills" class="nav-link">기술</a></li>
+        <li><a href="#projects" class="nav-link">프로젝트</a></li>
+        <li><a href="#contact" class="nav-link">연락처</a></li>
+      </ul>
+
+      <div class="nav-controls">
+        <button type="button" class="theme-toggle" aria-label="다크 모드 전환">🌙</button>
+        <button type="button" class="hamburger" aria-label="메뉴 열기" aria-expanded="false">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Hero: 문구는 플레이스홀더 (스켈레톤 완성 후 초안 확정) -->
+    <section id="hero" class="hero">
+      <h1 class="hero-title">(인사말 헤드라인 — 추후 확정)</h1>
+      <p class="hero-subtitle">(서브 문구 — 추후 확정)</p>
+      <div class="hero-actions">
+        <a href="#projects" class="btn btn-primary">프로젝트 보기</a>
+        <a href="#contact" class="btn btn-outline">연락하기</a>
+      </div>
+    </section>
+
+    <!-- About: 소개글 플레이스홀더, 사진은 추후 교체 -->
+    <section id="about" class="about">
+      <h2 class="section-title">소개</h2>
+      <img src="images/profile.jpg" alt="한재혁의 프로필 사진" class="about-photo">
+      <p class="about-text">(자기소개 본문 — 추후 확정)</p>
+    </section>
+
+    <!-- Skills: 표시 형태(평평/분류) 미정 — 임시로 평평한 목록 -->
+    <section id="skills" class="skills">
+      <h2 class="section-title">기술 스택</h2>
+      <ul class="skills-list">
+        <li class="skill-item">Python</li>
+        <li class="skill-item">JavaScript</li>
+        <li class="skill-item">React</li>
+        <li class="skill-item">Django</li>
+        <li class="skill-item">MySQL</li>
+      </ul>
+    </section>
+
+    <!-- Projects: GitHub API가 카드(ul > li > article)를 채움 -->
+    <section id="projects" class="projects">
+      <h2 class="section-title">프로젝트</h2>
+      <div class="projects-status" aria-live="polite"></div>
+      <ul class="projects-grid"></ul>
+    </section>
+
+    <!-- Contact: 에러 메시지는 자리 미리 확보, input 위쪽 배치 (결정 3) -->
+    <section id="contact" class="contact">
+      <h2 class="section-title">연락처</h2>
+      <form class="contact-form" novalidate>
+        <div class="form-field">
+          <label for="contact-name">이름</label>
+          <p class="form-error" data-error-for="name"></p>
+          <input type="text" id="contact-name" name="name" placeholder="이름을 입력하세요">
+        </div>
+        <div class="form-field">
+          <label for="contact-email">이메일</label>
+          <p class="form-error" data-error-for="email"></p>
+          <input type="email" id="contact-email" name="email" placeholder="example@email.com">
+        </div>
+        <div class="form-field">
+          <label for="contact-message">메시지</label>
+          <p class="form-error" data-error-for="message"></p>
+          <textarea id="contact-message" name="message" rows="5" placeholder="메시지를 입력하세요"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">보내기</button>
+        <p class="form-success" hidden>메시지가 성공적으로 전송되었습니다.</p>
+      </form>
+    </section>
+  </main>
+
+  <!-- 페이지 마무리: 저작권 + 외부 링크 -->
+  <footer class="site-footer">
+    <p class="copyright">&copy; 2026 한재혁</p>
+    <ul class="footer-links">
+      <li><a href="https://github.com/deliolleh" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="mailto:jhhan2206@naver.com">Email</a></li>
+    </ul>
+  </footer>
+
+  <button type="button" class="scroll-top" aria-label="맨 위로 이동">↑</button>
+</body>
+</html>
