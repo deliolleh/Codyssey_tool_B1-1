@@ -196,3 +196,115 @@ contactForm.addEventListener('submit', (event) => {
   formSuccess.hidden = false;
   contactForm.reset();
 });
+
+// ==========================================================
+// h. GitHub API 연동 (Projects 섹션)
+// 흐름: loadProjects()가 상태 변수를 바꾸고 → renderProjects()가 상태를 화면으로 그림
+// 화면 전체(상태 영역 + 카드 목록)가 "상태의 함수" — 다크모드와 같은 구조
+// ==========================================================
+const GITHUB_USERNAME = 'deliolleh';
+const projectsStatus = document.querySelector('.projects-status');
+const projectsGrid = document.querySelector('.projects-grid');
+
+// 상태: 'loading' | 'success' | 'error' | 'empty'
+let projectsState = 'loading';
+let projectsData = []; // 성공 시 저장소 배열
+let projectsErrorText = ''; // 에러 시 안내 문구
+
+/** 실패 원인별 안내 문구를 고른다 (response가 null이면 네트워크 자체 실패) */
+const getApiErrorText = (response) => {
+  if (!response) return '네트워크 연결을 확인해주세요.';
+  if (response.status === 403) return 'API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.';
+  if (response.status === 404) return '사용자를 찾을 수 없습니다.';
+  return '프로젝트를 불러올 수 없습니다.';
+};
+
+/**
+ * 현재 상태(projectsState)를 화면에 반영한다
+ * - 상태 영역: 로딩/에러/빈 상태를 동적 생성 (성공이면 비움)
+ * - 카드 목록: 성공 시 구조분해 + map + 템플릿 리터럴로 생성 (ul > li > article)
+ */
+const renderProjects = () => {
+  if (projectsState === 'loading') {
+    projectsStatus.innerHTML = `
+      <div class="spinner" role="status" aria-label="로딩 중"></div>
+      <p class="status-message">로딩 중...</p>
+    `;
+    projectsGrid.innerHTML = '';
+    return;
+  }
+
+  if (projectsState === 'error') {
+    projectsStatus.innerHTML = `
+      <p class="status-message">${projectsErrorText}</p>
+      <button type="button" class="btn btn-outline retry-button">다시 시도</button>
+    `;
+    projectsGrid.innerHTML = '';
+    return;
+  }
+
+  if (projectsState === 'empty') {
+    projectsStatus.innerHTML = '<p class="status-message">표시할 프로젝트가 없습니다.</p>';
+    projectsGrid.innerHTML = '';
+    return;
+  }
+
+  // success: 구조분해 할당으로 필요한 필드만 꺼내고, map으로 카드 HTML 변환
+  projectsStatus.innerHTML = '';
+  projectsGrid.innerHTML = projectsData
+    .map(
+      ({ name, description, html_url, stargazers_count, language }) => `
+      <li>
+        <article class="project-card">
+          <h3 class="project-name">
+            <a href="${html_url}" target="_blank" rel="noopener">${name}</a>
+          </h3>
+          <p class="project-desc">${description ?? '설명이 없습니다.'}</p>
+          <div class="project-meta">
+            <span>⭐ ${stargazers_count}</span>
+            <span>${language ?? '-'}</span>
+          </div>
+        </article>
+      </li>
+    `
+    )
+    .join('');
+};
+
+/** GitHub API를 호출하고 결과에 따라 상태를 전환한다 */
+const loadProjects = async () => {
+  projectsState = 'loading';
+  renderProjects();
+
+  try {
+    const response = await fetch(
+      `https://api.github.com/users/${GITHUB_USERNAME}/repos?sort=updated`
+    );
+
+    if (!response.ok) {
+      // 403(레이트 리밋)·404 등 비정상 응답 → 에러 상태
+      projectsState = 'error';
+      projectsErrorText = getApiErrorText(response);
+      renderProjects();
+      return;
+    }
+
+    projectsData = await response.json();
+    projectsState = projectsData.length === 0 ? 'empty' : 'success';
+    renderProjects();
+  } catch (error) {
+    // fetch 자체가 실패(오프라인 등) → 네트워크 에러 상태
+    console.error(error);
+    projectsState = 'error';
+    projectsErrorText = getApiErrorText(null);
+    renderProjects();
+  }
+};
+
+// 재시도 버튼은 에러 때마다 동적 생성되는 요소 → 부모에 이벤트 위임 (기능 3에서 예정한 그 패턴)
+projectsStatus.addEventListener('click', (event) => {
+  if (!event.target.matches('.retry-button')) return;
+  loadProjects();
+});
+
+loadProjects();
