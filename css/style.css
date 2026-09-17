@@ -60,6 +60,19 @@
   box-sizing: border-box;
 }
 
+/* 부드러운 스크롤 — CSS 담당 (결정: 앵커 이동은 선언으로 충분)
+   "동작 줄이기"를 켠 사용자에게는 적용하지 않음 (접근성) */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+html {
+  /* 고정 헤더에 섹션 제목이 가려지지 않도록 이동 지점 보정 */
+  scroll-padding-top: var(--header-height);
+}
+
 body {
   font-family: var(--font-base);
   font-size: var(--font-size-base);
@@ -83,8 +96,18 @@ a {
   text-decoration: none;
 }
 
+/* 섹션: 전체 폭 (배경 담당) / 컨테이너: 내용 폭 제한 담당 */
 main > section {
   padding: var(--space-xl) var(--space-sm);
+}
+
+/* 짝수 번째 섹션에 교대 배경 — 섹션 경계 시각 구분 (About, Projects) */
+main > section:nth-of-type(even) {
+  background-color: var(--color-bg-alt);
+  transition: background-color var(--transition);
+}
+
+.container {
   max-width: 1024px;
   margin: 0 auto;
 }
@@ -138,10 +161,18 @@ main > section {
   left: 0;
   right: 0;
   height: var(--header-height);
-  background-color: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
-  transition: background-color var(--transition);
+  background-color: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background-color var(--transition), border-color var(--transition),
+    box-shadow var(--transition);
   z-index: 100;
+}
+
+/* 스크롤 60px 초과 시 JS가 .scrolled 토글 → 배경 변경 (수용 기준 d) */
+.site-header.scrolled {
+  background-color: var(--color-bg);
+  border-bottom-color: var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .nav {
@@ -454,6 +485,29 @@ main > section {
 }
 
 /* ==========================================================
+   10-1. 등장 애니메이션 (Intersection Observer가 .visible 토글)
+   반복 모드: 화면 밖으로 나가면 다시 숨김 상태로 리셋
+   ========================================================== */
+.fade-in {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ==========================================================
    11. 반응형 — 모바일 퍼스트: 기본값이 모바일, 위로 올라가며 확장
    ========================================================== */
 /* 태블릿 (768px+): 메뉴 상시 노출, 햄버거 소멸, About 가로 배치 */
@@ -482,7 +536,7 @@ main > section {
     font-weight: 600;
   }
 
-  .about {
+  .about .container {
     display: grid;
     grid-template-columns: auto 1fr;
     column-gap: var(--space-lg);
