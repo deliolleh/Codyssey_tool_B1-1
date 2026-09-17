@@ -115,3 +115,84 @@ const fadeObserver = new IntersectionObserver(
 );
 
 fadeSections.forEach((section) => fadeObserver.observe(section));
+
+// ==========================================================
+// g. 폼 검증 (Contact)
+// 검증 시점 전략: ① blur — 필드를 떠날 때 검사 ("늦게 처벌")
+//               ② input — 에러 상태인 필드만 재검사 ("고치면 즉시 해제")
+//               ③ submit — 전체 검사 후 통과 시 성공 메시지
+// 흐름: 이벤트 → 유효성 상태 판정 → 에러 그릇(visible)과 테두리(invalid) 렌더링
+// ==========================================================
+const contactForm = document.querySelector('.contact-form');
+const formSuccess = document.querySelector('.form-success');
+const formInputs = contactForm.querySelectorAll('input, textarea');
+
+// 필드별 필수값 안내 문구
+const REQUIRED_MESSAGES = {
+  name: '이름을 입력해주세요.',
+  email: '이메일을 입력해주세요.',
+  message: '메시지를 입력해주세요.',
+};
+
+/**
+ * 필드의 현재 값을 검사해 에러 메시지를 돌려준다 (통과면 빈 문자열)
+ * - 필수값 검사: 직접 수행 (공백만 입력한 경우도 빈 값으로 취급)
+ * - 이메일 형식 검사: 브라우저 내장 판정(checkValidity)에 위임
+ */
+const getErrorMessage = (input) => {
+  if (input.value.trim() === '') {
+    return REQUIRED_MESSAGES[input.name];
+  }
+  if (input.type === 'email' && !input.checkValidity()) {
+    return '올바른 이메일 형식이 아닙니다.';
+  }
+  return '';
+};
+
+/**
+ * 검사 결과를 화면에 반영한다
+ * - 에러 그릇(.form-error): 자리는 항상 있고 visible 클래스로만 표시 전환
+ * - 입력창(.invalid): 빨간 테두리 표시
+ */
+const renderFieldError = (input, message) => {
+  const errorEl = contactForm.querySelector(`[data-error-for="${input.name}"]`);
+  errorEl.textContent = message;
+  errorEl.classList.toggle('visible', message !== '');
+  input.classList.toggle('invalid', message !== '');
+};
+
+/** 필드 하나를 검사하고 렌더링까지 수행. 통과 여부를 반환 */
+const validateField = (input) => {
+  const message = getErrorMessage(input);
+  renderFieldError(input, message);
+  return message === '';
+};
+
+formInputs.forEach((input) => {
+  // blur: 필드를 떠나는 순간 검사 — 입력 중에는 침묵
+  input.addEventListener('blur', () => validateField(input));
+
+  // input: 이미 에러가 표시된 필드만 타이핑 중 재검사 — 고쳐지는 즉시 에러 해제
+  input.addEventListener('input', () => {
+    if (input.classList.contains('invalid')) {
+      validateField(input);
+    }
+    formSuccess.hidden = true; // 새 입력이 시작되면 이전 성공 메시지는 감춤
+  });
+});
+
+contactForm.addEventListener('submit', (event) => {
+  event.preventDefault(); // 기본 동작(폼 전송 + 페이지 이동) 방지
+
+  // 전체 필드 검사 — 스프레드(...)로 NodeList를 배열로 바꿔 map 사용
+  const results = [...formInputs].map((input) => validateField(input));
+  const isAllValid = results.every((passed) => passed);
+
+  if (!isAllValid) {
+    contactForm.querySelector('.invalid')?.focus(); // 첫 에러 필드로 포커스 이동
+    return;
+  }
+
+  formSuccess.hidden = false;
+  contactForm.reset();
+});
