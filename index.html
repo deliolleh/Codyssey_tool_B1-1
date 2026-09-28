@@ -6,6 +6,16 @@
   <meta name="description" content="한재혁의 포트폴리오 웹사이트">
   <title>한재혁 | 포트폴리오</title>
   <link rel="stylesheet" href="css/style.css">
+  <!-- 테마 부트스트랩: 첫 페인트 전에 data-theme만 선적용 (다크 사용자의 흰 화면 번쩍임 방지) -->
+  <script>
+    {
+      const saved = localStorage.getItem('theme');
+      const dark = saved
+        ? saved === 'dark'
+        : matchMedia('(prefers-color-scheme: dark)').matches;
+      if (dark) document.documentElement.dataset.theme = 'dark';
+    }
+  </script>
   <script src="js/main.js" defer></script>
 </head>
 <body>
@@ -37,8 +47,7 @@
     <!-- Hero: 문구는 플레이스홀더 (스켈레톤 완성 후 초안 확정) -->
     <section id="hero" class="hero">
       <div class="container">
-        <h1 class="hero-title">(인사말 헤드라인 — 추후 확정)</h1>
-        <p class="hero-subtitle">(서브 문구 — 추후 확정)</p>
+        <h1 class="hero-title">안녕하세요, 개발자 한재혁입니다.</h1>
         <div class="hero-actions">
           <a href="#projects" class="btn btn-primary">프로젝트 보기</a>
           <a href="#contact" class="btn btn-outline">연락하기</a>
@@ -51,7 +60,7 @@
       <div class="container">
         <h2 class="section-title">소개</h2>
         <img src="images/profile.jpg" alt="한재혁의 프로필 사진" class="about-photo">
-        <p class="about-text">(자기소개 본문 — 추후 확정)</p>
+        <p class="about-text">중요한 것일수록 원리까지 파고들어 이해하는 개발자 한재혁입니다.</p>
       </div>
     </section>
 
