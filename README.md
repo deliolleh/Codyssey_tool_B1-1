@@ -53,7 +53,13 @@
 
 ## 스크린샷
 
-> 🚧 배포 확인 후 추가 예정 (데스크톱 / 모바일 / 다크 모드)
+| 데스크톱 (라이트) | 다크 모드 |
+|---|---|
+| ![데스크톱 라이트](images/screenshot-desktop-light.png) | ![데스크톱 다크](images/screenshot-desktop-dark.png) |
+
+| 모바일 |
+|---|
+| <img src="images/screenshot-mobile.png" alt="모바일" width="300"> |
 
 ## 로컬 실행
 
