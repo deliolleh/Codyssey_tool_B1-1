@@ -23,7 +23,7 @@
 | 부드러운 스크롤 | CSS `scroll-behavior: smooth` (동작 줄이기 설정 사용자는 제외) |
 | 스크롤 탑 버튼 | 스크롤 위치 감지 후 표시, 클릭 시 최상단 이동 |
 | 헤더 배경 전환 | 상단에서는 투명, 스크롤 시 배경·그림자 표시 |
-| 섹션 등장 애니메이션 | Intersection Observer, 재진입 시 반복 재생 |
+| 섹션 등장 애니메이션 | Intersection Observer, 재진입 시 반복 재생. Projects는 배경(섹션 틀)과 콘텐츠(카드) 반응을 분리 — 틀은 고정, 동적 생성된 카드들이 개별로 등장 |
 | 다크 모드 | 토글 → `data-theme` 속성 → CSS 변수 재정의. localStorage 저장, 시스템 설정(prefers-color-scheme) 감지, head 부트스트랩으로 첫 페인트 깜빡임 방지 |
 | 폼 유효성 검증 | blur 시 검사 + 에러 필드만 입력 중 재검증 + 제출 시 전체 검사. 이메일 형식은 `checkValidity()` 위임 |
 | GitHub API 연동 | `fetch`+`async/await`로 저장소 목록 로드. 로딩/성공/에러/빈 4가지 상태 UI, 에러 원인별 안내(403 한도·404·네트워크), 재시도 버튼(이벤트 위임) |
@@ -40,7 +40,7 @@
 |---|---|
 | 스크롤 탑 버튼 표시 | 스크롤 300px 초과 |
 | 헤더 배경 전환 | 스크롤 60px 초과 |
-| Intersection Observer threshold | 0.2 |
+| Intersection Observer threshold | 기본 0.2 / 모바일(<768px)은 0.1 — 모바일에서는 카드 목록이 1열이 되어 섹션이 길어지고, threshold는 요소 자신의 비율 기준이라 20% 도달이 늦어 긴 빈 화면이 생기므로 하향 |
 
 ## 폴더 구조
 

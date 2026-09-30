@@ -8,7 +8,10 @@
 // ----------------------------------------------------------
 const SCROLL_TOP_THRESHOLD = 300; // 스크롤 탑 버튼 표시 기준 (px)
 const NAV_SCROLL_THRESHOLD = 60; // 헤더 배경 전환 기준 (px)
-const OBSERVER_THRESHOLD = 0.2; // 등장 애니메이션 임계값 (요소의 20%가 보일 때)
+// 등장 애니메이션 임계값: 기본 0.2 (명세 권장값).
+// 모바일(<768px)에서는 카드가 1열이 되어 섹션이 매우 길어지고,
+// threshold가 "요소 자신의 비율" 기준이라 20% 도달이 늦어 빈 화면처럼 보임 → 0.1로 하향
+const OBSERVER_THRESHOLD = matchMedia('(max-width: 767px)').matches ? 0.1 : 0.2;
 
 // ==========================================================
 // a. 햄버거 메뉴 토글 (모바일 풀스크린 오버레이)
@@ -104,17 +107,20 @@ renderTheme();
 // ==========================================================
 const fadeSections = document.querySelectorAll('.fade-in');
 
-const fadeObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      // 반복 모드: 들어오면 켜고(true) 나가면 꺼서(false) 재진입 시 다시 재생
-      entry.target.classList.toggle('visible', entry.isIntersecting);
-    });
-  },
-  { threshold: OBSERVER_THRESHOLD }
-);
+const fadeCallback = (entries) => {
+  entries.forEach((entry) => {
+    // 반복 모드: 들어오면 켜고(true) 나가면 꺼서(false) 재진입 시 다시 재생
+    entry.target.classList.toggle('visible', entry.isIntersecting);
+  });
+};
+
+const fadeObserver = new IntersectionObserver(fadeCallback, {
+  threshold: OBSERVER_THRESHOLD,
+});
 
 fadeSections.forEach((section) => fadeObserver.observe(section));
+// Projects 섹션은 관찰하지 않는다 — 배경(섹션 틀)과 콘텐츠(카드)의 반응을 분리:
+// 틀은 항상 보이고, API 카드들이 생성될 때 개별로 관찰 등록된다 (renderProjects 참고)
 
 // ==========================================================
 // g. 폼 검증 (Contact)
@@ -254,7 +260,7 @@ const renderProjects = () => {
   projectsGrid.innerHTML = projectsData
     .map(
       ({ name, description, html_url, stargazers_count, language }) => `
-      <li>
+      <li class="fade-in">
         <article class="project-card">
           <h3 class="project-name">
             <a href="${html_url}" target="_blank" rel="noopener">${name}</a>
@@ -269,6 +275,10 @@ const renderProjects = () => {
     `
     )
     .join('');
+
+  // 배경·콘텐츠 반응 분리: 방금 태어난 카드들을 개별 관찰 등록 —
+  // 각 카드가 화면에 들어올 때 각자 등장한다 (카드는 작아서 비율 임계값이 정상 작동)
+  projectsGrid.querySelectorAll('li').forEach((card) => fadeObserver.observe(card));
 };
 
 /** GitHub API를 호출하고 결과에 따라 상태를 전환한다 */
