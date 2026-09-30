@@ -14,6 +14,26 @@ const NAV_SCROLL_THRESHOLD = 60; // 헤더 배경 전환 기준 (px)
 const OBSERVER_THRESHOLD = matchMedia('(max-width: 767px)').matches ? 0.1 : 0.2;
 
 // ==========================================================
+// 애플리케이션 상태 — 화면을 결정하는 모든 데이터의 단일 저장소
+// 규칙: 이벤트 핸들러는 state만 수정하고, 렌더 함수는 state만 읽는다
+// (일시적 UI 토글(메뉴 열림·스크롤 위치 파생 상태)은 관행대로 DOM 클래스가 담당)
+// ==========================================================
+const state = {
+  theme: 'light', // 다크 모드 ('light' | 'dark')
+  projects: {
+    status: 'loading', // 'loading' | 'success' | 'error' | 'empty'
+    data: [], // 성공 시 저장소 배열
+    errorText: '', // 에러 시 안내 문구
+  },
+  formErrors: {
+    // 폼 유효성 (빈 문자열 = 통과)
+    name: '',
+    email: '',
+    message: '',
+  },
+};
+
+// ==========================================================
 // a. 햄버거 메뉴 토글 (모바일 풀스크린 오버레이)
 // 흐름: click → 열림 상태(.active) 토글 → CSS가 오버레이 표시/숨김
 // ==========================================================
@@ -66,33 +86,33 @@ scrollTopButton.addEventListener('click', () => {
 
 // ==========================================================
 // e. 다크 모드
-// 흐름: click → 상태 변수(currentTheme) 변경 → renderTheme()이 DOM 반영
-// 상태의 원본은 JS 변수이고, DOM(data-theme)은 그 반영 결과다 (React의 state → 렌더링 구조)
+// 흐름: click → state.theme 변경 → renderTheme()이 DOM 반영
+// 상태의 원본은 state 객체이고, DOM(data-theme)은 그 반영 결과다 (React의 state → 렌더링 구조)
 // ==========================================================
 const themeToggle = document.querySelector('.theme-toggle');
 
 // 초기 테마 우선순위: ① localStorage 저장값 → ② 시스템 설정(prefers-color-scheme)
 const savedTheme = localStorage.getItem('theme');
 const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-let currentTheme = savedTheme ?? (systemPrefersDark ? 'dark' : 'light');
+state.theme = savedTheme ?? (systemPrefersDark ? 'dark' : 'light');
 
 /**
- * 현재 테마 상태(currentTheme)를 DOM에 반영한다
+ * 현재 테마 상태(state.theme)를 DOM에 반영한다
  * - html의 data-theme 속성 → CSS 변수 재정의([data-theme="dark"]) 발동
  * - 토글 버튼의 아이콘/라벨도 상태에 맞춰 갱신
  */
 const renderTheme = () => {
-  document.documentElement.dataset.theme = currentTheme;
-  themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+  document.documentElement.dataset.theme = state.theme;
+  themeToggle.textContent = state.theme === 'dark' ? '☀️' : '🌙';
   themeToggle.setAttribute(
     'aria-label',
-    currentTheme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'
+    state.theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'
   );
 };
 
 themeToggle.addEventListener('click', () => {
-  currentTheme = currentTheme === 'dark' ? 'light' : 'dark'; // ① 상태 변경
-  localStorage.setItem('theme', currentTheme); // ② 새로고침 대비 저장
+  state.theme = state.theme === 'dark' ? 'light' : 'dark'; // ① 상태 변경
+  localStorage.setItem('theme', state.theme); // ② 새로고침 대비 저장
   renderTheme(); // ③ 화면 반영
 });
 
@@ -156,22 +176,23 @@ const getErrorMessage = (input) => {
 };
 
 /**
- * 검사 결과를 화면에 반영한다
+ * 유효성 상태(state.formErrors)를 "읽어서" 화면에 반영한다
  * - 에러 그릇(.form-error): 자리는 항상 있고 visible 클래스로만 표시 전환
  * - 입력창(.invalid): 빨간 테두리 표시
  */
-const renderFieldError = (input, message) => {
+const renderFieldError = (input) => {
+  const message = state.formErrors[input.name];
   const errorEl = contactForm.querySelector(`[data-error-for="${input.name}"]`);
   errorEl.textContent = message;
   errorEl.classList.toggle('visible', message !== '');
   input.classList.toggle('invalid', message !== '');
 };
 
-/** 필드 하나를 검사하고 렌더링까지 수행. 통과 여부를 반환 */
+/** 필드 하나를 검사해 상태를 갱신하고 렌더링까지 수행. 통과 여부를 반환 */
 const validateField = (input) => {
-  const message = getErrorMessage(input);
-  renderFieldError(input, message);
-  return message === '';
+  state.formErrors[input.name] = getErrorMessage(input); // ① 이벤트 → 상태 변경
+  renderFieldError(input); // ② 상태 → 렌더
+  return state.formErrors[input.name] === '';
 };
 
 formInputs.forEach((input) => {
@@ -180,8 +201,8 @@ formInputs.forEach((input) => {
 
   // input: 이미 에러가 표시된 필드만 타이핑 중 재검사 — 고쳐지는 즉시 에러 해제
   input.addEventListener('input', () => {
-    if (input.classList.contains('invalid')) {
-      validateField(input);
+    if (state.formErrors[input.name] !== '') {
+      validateField(input); // 에러 "상태"인 필드만 재검증 — DOM이 아니라 state가 판단 근거
     }
     formSuccess.hidden = true; // 새 입력이 시작되면 이전 성공 메시지는 감춤
   });
@@ -205,17 +226,13 @@ contactForm.addEventListener('submit', (event) => {
 
 // ==========================================================
 // h. GitHub API 연동 (Projects 섹션)
-// 흐름: loadProjects()가 상태 변수를 바꾸고 → renderProjects()가 상태를 화면으로 그림
+// 흐름: loadProjects()가 state.projects를 바꾸고 → renderProjects()가 상태를 화면으로 그림
 // 화면 전체(상태 영역 + 카드 목록)가 "상태의 함수" — 다크모드와 같은 구조
+// 이 영역의 상태(status/data/errorText)는 파일 상단 state.projects에 산다
 // ==========================================================
 const GITHUB_USERNAME = 'deliolleh';
 const projectsStatus = document.querySelector('.projects-status');
 const projectsGrid = document.querySelector('.projects-grid');
-
-// 상태: 'loading' | 'success' | 'error' | 'empty'
-let projectsState = 'loading';
-let projectsData = []; // 성공 시 저장소 배열
-let projectsErrorText = ''; // 에러 시 안내 문구
 
 /** 실패 원인별 안내 문구를 고른다 (response가 null이면 네트워크 자체 실패) */
 const getApiErrorText = (response) => {
@@ -226,12 +243,12 @@ const getApiErrorText = (response) => {
 };
 
 /**
- * 현재 상태(projectsState)를 화면에 반영한다
+ * 현재 상태(state.projects)를 화면에 반영한다
  * - 상태 영역: 로딩/에러/빈 상태를 동적 생성 (성공이면 비움)
  * - 카드 목록: 성공 시 구조분해 + map + 템플릿 리터럴로 생성 (ul > li > article)
  */
 const renderProjects = () => {
-  if (projectsState === 'loading') {
+  if (state.projects.status === 'loading') {
     projectsStatus.innerHTML = `
       <div class="spinner" role="status" aria-label="로딩 중"></div>
       <p class="status-message">로딩 중...</p>
@@ -240,16 +257,16 @@ const renderProjects = () => {
     return;
   }
 
-  if (projectsState === 'error') {
+  if (state.projects.status === 'error') {
     projectsStatus.innerHTML = `
-      <p class="status-message">${projectsErrorText}</p>
+      <p class="status-message">${state.projects.errorText}</p>
       <button type="button" class="btn btn-outline retry-button">다시 시도</button>
     `;
     projectsGrid.innerHTML = '';
     return;
   }
 
-  if (projectsState === 'empty') {
+  if (state.projects.status === 'empty') {
     projectsStatus.innerHTML = '<p class="status-message">표시할 프로젝트가 없습니다.</p>';
     projectsGrid.innerHTML = '';
     return;
@@ -257,7 +274,7 @@ const renderProjects = () => {
 
   // success: 구조분해 할당으로 필요한 필드만 꺼내고, map으로 카드 HTML 변환
   projectsStatus.innerHTML = '';
-  projectsGrid.innerHTML = projectsData
+  projectsGrid.innerHTML = state.projects.data
     .map(
       ({ name, description, html_url, stargazers_count, language }) => `
       <li class="fade-in">
@@ -283,7 +300,7 @@ const renderProjects = () => {
 
 /** GitHub API를 호출하고 결과에 따라 상태를 전환한다 */
 const loadProjects = async () => {
-  projectsState = 'loading';
+  state.projects.status = 'loading';
   renderProjects();
 
   try {
@@ -293,20 +310,20 @@ const loadProjects = async () => {
 
     if (!response.ok) {
       // 403(레이트 리밋)·404 등 비정상 응답 → 에러 상태
-      projectsState = 'error';
-      projectsErrorText = getApiErrorText(response);
+      state.projects.status = 'error';
+      state.projects.errorText = getApiErrorText(response);
       renderProjects();
       return;
     }
 
-    projectsData = await response.json();
-    projectsState = projectsData.length === 0 ? 'empty' : 'success';
+    state.projects.data = await response.json();
+    state.projects.status = state.projects.data.length === 0 ? 'empty' : 'success';
     renderProjects();
   } catch (error) {
     // fetch 자체가 실패(오프라인 등) → 네트워크 에러 상태
     console.error(error);
-    projectsState = 'error';
-    projectsErrorText = getApiErrorText(null);
+    state.projects.status = 'error';
+    state.projects.errorText = getApiErrorText(null);
     renderProjects();
   }
 };
